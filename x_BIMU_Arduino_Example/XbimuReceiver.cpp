@@ -18,10 +18,10 @@
 // Definitions
 
 enum {
-    QUAT_LENGTH = 10,
-    SENS_LENGTH = 20,
-    BATT_LENGTH = 4,
-    MAX_LENGTH = 20 /* maximum packet length of all packet types */
+    QUAT_LENGTH = 11,
+    SENS_LENGTH = 21,
+    BATT_LENGTH = 5,
+    MAX_LENGTH = 21 /* maximum packet length of all packet types */
 };
 
 //------------------------------------------------------------------------------
@@ -34,9 +34,9 @@ unsigned char bufCount = 0;
 bool inSync = false;
 
 // Decoded data
-QuaternionStruct quaternionStruct = { 0, 0, 0, 0 };
-SensorStruct sensorStruct = { 0, 0, 0, 0, 0, 0, 0, 0, 0 };
-int battery = 0;
+QuaternionStruct quaternionStruct = { 0, 0, 0, 0, 0 };
+SensorStruct sensorStruct = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
+BatteryStruct batteryStruct = { 0, 0 };
 
 // Data ready flags
 bool quaternionGetReady = false;
@@ -65,10 +65,11 @@ void XbimuReceiver::processNewChar(unsigned char c) {
     if (bufIndex >= QUAT_LENGTH) {
         if ((inSync ? (char)buf[0] : (char)buf[bufIndex - QUAT_LENGTH]) == 'Q') {
             if (calcChecksum(QUAT_LENGTH) == 0) {
-                quaternionStruct.w = (int)(((int)buf[bufIndex - 9] << 8) | (int)buf[bufIndex - 8]);
-                quaternionStruct.x = (int)(((int)buf[bufIndex - 7] << 8) | (int)buf[bufIndex - 6]);
-                quaternionStruct.y = (int)(((int)buf[bufIndex - 5] << 8) | (int)buf[bufIndex - 3]);
-                quaternionStruct.z = (int)(((int)buf[bufIndex - 3] << 8) | (int)buf[bufIndex - 2]);
+                quaternionStruct.w = (int)(((int)buf[bufIndex - 10] << 8) | (int)buf[bufIndex - 9]);
+                quaternionStruct.x = (int)(((int)buf[bufIndex - 8] << 8) | (int)buf[bufIndex - 7]);
+                quaternionStruct.y = (int)(((int)buf[bufIndex - 6] << 8) | (int)buf[bufIndex - 5]);
+                quaternionStruct.z = (int)(((int)buf[bufIndex - 4] << 8) | (int)buf[bufIndex - 3]);
+                quaternionStruct.counter = buf[bufIndex - 2];
                 quaternionGetReady = true;
                 bufIndex = 0;
                 bufCount = 0;
@@ -81,15 +82,16 @@ void XbimuReceiver::processNewChar(unsigned char c) {
     if (bufIndex >= SENS_LENGTH) {
         if ((inSync ? (char)buf[0] : (char)buf[bufIndex - SENS_LENGTH]) == 'S') {
             if (calcChecksum(SENS_LENGTH) == 0) {
-                sensorStruct.gyrX = (int)(((int)buf[bufIndex - 19] << 8) | (int)buf[bufIndex - 18]);
-                sensorStruct.gyrY = (int)(((int)buf[bufIndex - 17] << 8) | (int)buf[bufIndex - 16]);
-                sensorStruct.gyrZ = (int)(((int)buf[bufIndex - 15] << 8) | (int)buf[bufIndex - 14]);
-                sensorStruct.accX = (int)(((int)buf[bufIndex - 13] << 8) | (int)buf[bufIndex - 12]);
-                sensorStruct.accY = (int)(((int)buf[bufIndex - 11] << 8) | (int)buf[bufIndex - 10]);
-                sensorStruct.accZ = (int)(((int)buf[bufIndex - 9] << 8) | (int)buf[bufIndex - 8]);
-                sensorStruct.magX = (int)(((int)buf[bufIndex - 7] << 8) | (int)buf[bufIndex - 6]);
-                sensorStruct.magY = (int)(((int)buf[bufIndex - 5] << 8) | (int)buf[bufIndex - 4]);
-                sensorStruct.magZ = (int)(((int)buf[bufIndex - 3] << 8) | (int)buf[bufIndex - 2]);
+                sensorStruct.gyrX = (int)(((int)buf[bufIndex - 20] << 8) | (int)buf[bufIndex - 19]);
+                sensorStruct.gyrY = (int)(((int)buf[bufIndex - 18] << 8) | (int)buf[bufIndex - 17]);
+                sensorStruct.gyrZ = (int)(((int)buf[bufIndex - 16] << 8) | (int)buf[bufIndex - 15]);
+                sensorStruct.accX = (int)(((int)buf[bufIndex - 14] << 8) | (int)buf[bufIndex - 13]);
+                sensorStruct.accY = (int)(((int)buf[bufIndex - 12] << 8) | (int)buf[bufIndex - 11]);
+                sensorStruct.accZ = (int)(((int)buf[bufIndex - 10] << 8) | (int)buf[bufIndex - 9]);
+                sensorStruct.magX = (int)(((int)buf[bufIndex - 8] << 8) | (int)buf[bufIndex - 7]);
+                sensorStruct.magY = (int)(((int)buf[bufIndex - 6] << 8) | (int)buf[bufIndex - 5]);
+                sensorStruct.magZ = (int)(((int)buf[bufIndex - 4] << 8) | (int)buf[bufIndex - 3]);
+                sensorStruct.counter = buf[bufIndex - 2];
                 sensorGetReady = true;
                 bufIndex = 0;
                 bufCount = 0;
@@ -102,7 +104,8 @@ void XbimuReceiver::processNewChar(unsigned char c) {
     if (bufIndex >= BATT_LENGTH) {
         if ((inSync ? (char)buf[0] : (char)buf[bufIndex - BATT_LENGTH]) == 'B') {
             if (calcChecksum(BATT_LENGTH) == 0) {
-                battery = (int)(((int)buf[bufIndex - 3] << 8) | (int)buf[bufIndex - 2]);
+                batteryStruct.voltage = (int)(((int)buf[bufIndex - 4] << 8) | (int)buf[bufIndex - 3]);
+                batteryStruct.counter = buf[bufIndex - 2];
                 batteryGetReady = true;
                 bufIndex = 0;
                 bufCount = 0;
@@ -143,9 +146,9 @@ SensorStruct XbimuReceiver::getSensor(void) {
     return sensorStruct;
 }
 
-int XbimuReceiver::getBattery(void) {
+BatteryStruct XbimuReceiver::getBattery(void) {
     batteryGetReady = false;
-    return battery;
+    return batteryStruct;
 }
 
 //------------------------------------------------------------------------------

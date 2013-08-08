@@ -37,7 +37,7 @@ void setup() {
 
 void loop() {
 
-    // Process recieved data
+    // Process received data
     while(Serial1.available() > 0) {
         xbimuReceiver.processNewChar(Serial1.read());
     }
@@ -82,8 +82,9 @@ void loop() {
 
     // Print battery data
     if(xbimuReceiver.isBatteryGetReady()) {
+        BatteryStruct batteryStruct = xbimuReceiver.getBattery();
         Serial.print("battery = ");
-        Serial.print(xbimuReceiver.getBattery());
+        Serial.print(batteryStruct.voltage);
         Serial.print("\r");
     }
 }

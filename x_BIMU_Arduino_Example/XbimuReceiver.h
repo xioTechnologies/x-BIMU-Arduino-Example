@@ -20,6 +20,7 @@ typedef struct {
     int x;
     int y;
     int z;
+    unsigned char counter;
 } QuaternionStruct;
 
 typedef struct {
@@ -32,7 +33,13 @@ typedef struct {
     int magX;   /* magnetometer x axis in mGa   */
     int magY;   /* magnetometer y axis in mGa   */
     int magZ;   /* magnetometer z axis in mGa   */
+    unsigned char counter;
 } SensorStruct;
+
+typedef struct {
+    int voltage;    /* battery voltage in mV */
+    unsigned char counter;
+} BatteryStruct;
 
 //------------------------------------------------------------------------------
 // Class declaration
@@ -46,7 +53,7 @@ class XbimuReceiver {
         bool isBatteryGetReady(void) const;
         QuaternionStruct getQuaternion(void);
         SensorStruct getSensor(void);
-        int getBattery(void);   // gets battery voltage in mV
+        BatteryStruct getBattery(void);
 
     private:
         unsigned char buf[256];
@@ -55,7 +62,7 @@ class XbimuReceiver {
         bool inSync;
         QuaternionStruct quaternionStruct;
         SensorStruct sensorStruct;
-        int battery;
+        BatteryStruct batteryStruct;
         bool quaternionGetReady;
         bool sensorGetReady;
         bool batteryGetReady;
